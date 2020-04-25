@@ -1,0 +1,78 @@
+version: '2.2'
+services:
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.2.2
+    volumes:
+      - ./logstash/config/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+    network_mode: "host"
+    environment:
+      - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - 8044:8044
+      - 7044:7044
+      - 9045:9045
+      - 6044:6044
+      - 7051:7051
+      
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.2
+    ports: [ '5601:5601' ]
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    network_mode: "host"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - network.publish_host=localhost
+      - "network.host=_site_"
+      - "network.bind_host=0.0.0.0"
+      - "http.port=9200-9210"
+      - "transport.tcp.port=9300-9310"
+      - "discovery.zen.ping.unicast.hosts=localhost:9310"
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+#     - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    ports:
+      - 9200:9200
+      - 9300:9300
+    network_mode: "host" 
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch2
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - "discovery.zen.ping.unicast.hosts=localhost:9300"
+      - "http.port=9210-9220"
+      - "transport.tcp.port=9310-9320"
+      - network.publish_host=localhost
+      - "network.host=_site_"
+      - "network.bind_host=0.0.0.0"
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+#      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    network_mode: "host"
+
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+
